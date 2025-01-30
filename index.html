@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تقييم فريق الإبداع</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+        }
+        .container {
+            width: 50%;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        .stars input {
+            display: none;
+        }
+        .stars label {
+            font-size: 20px;
+            color: gray;
+            cursor: pointer;
+        }
+        .stars input:checked ~ label {
+            color: gold;
+        }
+        .result {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>تقييم فريق الإبداع</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>المعيار</th>
+                    <th>الوزن (%)</th>
+                    <th>التقييم (1-5)</th>
+                    <th>النتيجة بعد الوزن</th>
+                </tr>
+            </thead>
+            <tbody id="kpiTable">
+                <script>
+                    const criteria = [
+                        { name: "جودة التصاميم والإبداع", weight: 25 },
+                        { name: "الالتزام بالمواعيد", weight: 20 },
+                        { name: "التفاعل مع الفريق والتجاوب مع التعديلات", weight: 15 },
+                        { name: "عدد المشاريع المنجزة", weight: 15 },
+                        { name: "استخدام الأدوات والتطوير الشخصي", weight: 10 },
+                        { name: "تحقيق الأهداف التسويقية", weight: 15 }
+                    ];
+
+                    criteria.forEach((c, index) => {
+                        document.write(`
+                            <tr>
+                                <td>${c.name}</td>
+                                <td>${c.weight}%</td>
+                                <td>
+                                    <select id="rating${index}" onchange="calculateScore()">
+                                        <option value="1">⭐</option>
+                                        <option value="2">⭐⭐</option>
+                                        <option value="3" selected>⭐⭐⭐</option>
+                                        <option value="4">⭐⭐⭐⭐</option>
+                                        <option value="5">⭐⭐⭐⭐⭐</option>
+                                    </select>
+                                </td>
+                                <td id="score${index}">0.00</td>
+                            </tr>
+                        `);
+                    });
+                </script>
+            </tbody>
+        </table>
+        <div class="result" id="finalScore">التقييم النهائي: 0.00/5</div>
+        <div class="result" id="appraisal">زيادة سنوية مقترحة: -</div>
+    </div>
+
+    <script>
+        function calculateScore() {
+            let totalScore = 0;
+            let totalWeight = 0;
+            criteria.forEach((c, index) => {
+                const rating = parseInt(document.getElementById(`rating${index}`).value);
+                const weightedScore = (rating * c.weight) / 100;
+                totalScore += weightedScore;
+                totalWeight += c.weight;
+                document.getElementById(`score${index}`).innerText = weightedScore.toFixed(2);
+            });
+            
+            document.getElementById("finalScore").innerText = `التقييم النهائي: ${totalScore.toFixed(2)}/5`;
+            let appraisal = "لا توجد زيادة أو يحتاج لتحسين الأداء";
+            if (totalScore >= 4.5) appraisal = "زيادة 12-15%";
+            else if (totalScore >= 4.0) appraisal = "زيادة 8-10%";
+            else if (totalScore >= 3.5) appraisal = "زيادة 5-7%";
+            else if (totalScore >= 3.0) appraisal = "زيادة 2-4%";
+            document.getElementById("appraisal").innerText = `زيادة سنوية مقترحة: ${appraisal}`;
+        }
+        
+        calculateScore(); // Initialize values
+    </script>
+</body>
+</html>
