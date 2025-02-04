@@ -42,11 +42,35 @@
             font-size: 18px;
             font-weight: bold;
         }
+        .input-group {
+            margin: 10px 0;
+        }
+        input[type="text"] {
+            padding: 10px;
+            width: 80%;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>تقييم فريق الإبداع</h2>
+        <div class="input-group">
+            <label for="employeeName">اسم الموظف:</label>
+            <input type="text" id="employeeName" placeholder="أدخل اسم الموظف">
+        </div>
         <table>
             <thead>
                 <tr>
@@ -90,30 +114,115 @@
         </table>
         <div class="result" id="finalScore">التقييم النهائي: 0.00/5</div>
         <div class="result" id="appraisal">زيادة سنوية مقترحة: -</div>
+        <button onclick="sendEmail()">Send to Email</button>
     </div>
 
-    <script>
-        function calculateScore() {
-            let totalScore = 0;
-            let totalWeight = 0;
-            criteria.forEach((c, index) => {
-                const rating = parseInt(document.getElementById(`rating${index}`).value);
-                const weightedScore = (rating * c.weight) / 100;
-                totalScore += weightedScore;
-                totalWeight += c.weight;
-                document.getElementById(`score${index}`).innerText = weightedScore.toFixed(2);
-            });
-            
-            document.getElementById("finalScore").innerText = `التقييم النهائي: ${totalScore.toFixed(2)}/5`;
-            let appraisal = "لا توجد زيادة أو يحتاج لتحسين الأداء";
-            if (totalScore >= 4.5) appraisal = "زيادة 12-15%";
-            else if (totalScore >= 4.0) appraisal = "زيادة 8-10%";
-            else if (totalScore >= 3.5) appraisal = "زيادة 5-7%";
-            else if (totalScore >= 3.0) appraisal = "زيادة 2-4%";
-            document.getElementById("appraisal").innerText = `زيادة سنوية مقترحة: ${appraisal}`;
-        }
-        
-        calculateScore(); // Initialize values
+    <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script type="text/javascript">
+       (function(){
+          emailjs.init("Vj6-K8TptzERk4c8B");  // Replace with your actual EmailJS public key
+       })();
     </script>
+<script>
+    
+    // Initialize EmailJS with your User ID
+(function() {
+    emailjs.init("Vj6-K8TptzERk4c8B"); // Replace with your EmailJS User ID
+})();
+
+// Function to calculate the score
+function calculateScore() {
+    let totalScore = 0;
+    let totalWeight = 0;
+    const criteria = [
+        { name: "جودة التصاميم والإبداع", weight: 25 },
+        { name: "الالتزام بالمواعيد", weight: 20 },
+        { name: "التفاعل مع الفريق والتجاوب مع التعديلات", weight: 15 },
+        { name: "عدد المشاريع المنجزة", weight: 15 },
+        { name: "استخدام الأدوات والتطوير الشخصي", weight: 10 },
+        { name: "تحقيق الأهداف التسويقية", weight: 15 }
+    ];
+
+    criteria.forEach((c, index) => {
+        const rating = parseInt(document.getElementById(`rating${index}`).value);
+        const weightedScore = (rating * c.weight) / 100;
+        totalScore += weightedScore;
+        totalWeight += c.weight;
+        document.getElementById(`score${index}`).innerText = weightedScore.toFixed(2);
+    });
+
+    document.getElementById("finalScore").innerText = `التقييم النهائي: ${totalScore.toFixed(2)}/5`;
+    let appraisal = "لا توجد زيادة أو يحتاج لتحسين الأداء";
+    if (totalScore >= 4.5) appraisal = "زيادة 12-15%";
+    else if (totalScore >= 4.0) appraisal = "زيادة 8-10%";
+    else if (totalScore >= 3.5) appraisal = "زيادة 5-7%";
+    else if (totalScore >= 3.0) appraisal = "زيادة 2-4%";
+    document.getElementById("appraisal").innerText = `زيادة سنوية مقترحة: ${appraisal}`;
+}
+
+// Function to send the email
+function sendEmail() {
+    const employeeName = document.getElementById("employeeName").value;
+    if (!employeeName) {
+        alert("من فضلك أدخل اسم الموظف");
+        return;
+    }
+
+    const finalScore = document.getElementById("finalScore").innerText;
+    const appraisal = document.getElementById("appraisal").innerText;
+
+    let emailParams = {
+        to_email: "abdelrahman.codingprojects@gmail.com", // Replace with recipient(s)
+        subject: `${employeeName} Appraisal`,
+        body: `
+            Hello,
+
+            The appraisal for employee ${employeeName} is as follows:
+
+            Form Details:
+        `
+    };
+
+    const criteria = [
+        { name: "جودة التصاميم والإبداع", weight: 25 },
+        { name: "الالتزام بالمواعيد", weight: 20 },
+        { name: "التفاعل مع الفريق والتجاوب مع التعديلات", weight: 15 },
+        { name: "عدد المشاريع المنجزة", weight: 15 },
+        { name: "استخدام الأدوات والتطوير الشخصي", weight: 10 },
+        { name: "تحقيق الأهداف التسويقية", weight: 15 }
+    ];
+
+    // Add employee name, final score, and appraisal
+    emailParams.employeeName = employeeName;
+    emailParams.finalScore = finalScore;
+    emailParams.appraisal = appraisal;
+
+    // Add the 6 aspects as separate variables
+    criteria.forEach((c, index) => {
+        const rating = document.getElementById(`rating${index}`).value;
+        const weightedScore = (parseInt(rating) * c.weight) / 100;
+        
+        emailParams[`name${index}`] = c.name;
+        emailParams[`weight${index}`] = c.weight;
+        emailParams[`rating${index}`] = rating;
+        emailParams[`weightedScore${index}`] = weightedScore.toFixed(2);
+    });
+
+    // Send email using EmailJS
+    emailjs.send("service_bj3af96", "template_q990eif", emailParams)
+        .then(function(response) {
+            alert("تم إرسال التقييم إلى البريد الإلكتروني بنجاح");
+        }, function(error) {
+            alert("فشل في إرسال البريد الإلكتروني. حاول مرة أخرى.");
+        });
+}
+
+
+</script>
+
+
+
 </body>
 </html>
