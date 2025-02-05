@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>تقييم فريق الإبداع</title>
+    <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.0/dist/browser-image-compression.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.0/dist/browser-image-compression.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -18,38 +22,36 @@
             border-radius: 10px;
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            padding: 10px;
-            border: 1px solid #ddd;
-        }
-        .stars input {
-            display: none;
-        }
-        .stars label {
-            font-size: 20px;
-            color: gray;
-            cursor: pointer;
-        }
-        .stars input:checked ~ label {
-            color: gold;
-        }
-        .result {
-            margin-top: 20px;
-            font-size: 18px;
-            font-weight: bold;
-        }
         .input-group {
-            margin: 10px 0;
+            margin-bottom: 20px;
         }
         input[type="text"] {
             padding: 10px;
             width: 80%;
             border-radius: 5px;
             border: 1px solid #ddd;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        .result-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #e8e8e8;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .result {
+            font-size: 18px;
+            font-weight: bold;
         }
         button {
             padding: 10px 20px;
@@ -58,112 +60,119 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            margin-top: 10px;
         }
         button:hover {
             background-color: #45a049;
         }
+        #evaluationTable {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        #evaluationTable th, 
+        #evaluationTable td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: center;
+        }
+
+        #evaluationTable th {
+            background-color: #f2f2f2; /* Light gray background for headers */
+            font-weight: bold;
+        }
+
     </style>
 </head>
 <body>
     <div class="container">
         <h2>تقييم فريق الإبداع</h2>
         <div class="input-group">
-            <label for="employeeName">اسم الموظف:</label>
             <input type="text" id="employeeName" placeholder="أدخل اسم الموظف">
         </div>
-        <table>
+        <table id="evaluationTable">
             <thead>
                 <tr>
                     <th>المعيار</th>
                     <th>الوزن (%)</th>
                     <th>التقييم (1-5)</th>
                     <th>النتيجة بعد الوزن</th>
+                    <th>+</th>
                 </tr>
             </thead>
             <tbody id="kpiTable">
-                <script>
-                    const criteria = [
-                        { name: "جودة التصاميم والإبداع", weight: 25 },
-                        { name: "الالتزام بالمواعيد", weight: 20 },
-                        { name: "التفاعل مع الفريق والتجاوب مع التعديلات", weight: 15 },
-                        { name: "عدد المشاريع المنجزة", weight: 15 },
-                        { name: "استخدام الأدوات والتطوير الشخصي", weight: 10 },
-                        { name: "تحقيق الأهداف التسويقية", weight: 15 }
-                    ];
-
-                    criteria.forEach((c, index) => {
-                        document.write(`
-                            <tr>
-                                <td>${c.name}</td>
-                                <td>${c.weight}%</td>
-                                <td>
-                                    <select id="rating${index}" onchange="calculateScore()">
-                                        <option value="1">⭐</option>
-                                        <option value="2">⭐⭐</option>
-                                        <option value="3" selected>⭐⭐⭐</option>
-                                        <option value="4">⭐⭐⭐⭐</option>
-                                        <option value="5">⭐⭐⭐⭐⭐</option>
-                                    </select>
-                                </td>
-                                <td id="score${index}">0.00</td>
-                            </tr>
-                        `);
-                    });
-                </script>
+                <tr>
+                    <td><input type="text" class="aspect"></td>
+                    <td><input type="number" class="weight" min="1" max="100" value="10"></td>
+                    <td>
+                        <select class="rating" onchange="calculateScore()">
+                            <option value="1">⭐</option>
+                            <option value="2">⭐⭐</option>
+                            <option value="3" selected>⭐⭐⭐</option>
+                            <option value="4">⭐⭐⭐⭐</option>
+                            <option value="5">⭐⭐⭐⭐⭐</option>
+                        </select>
+                    </td>
+                    <td class="score">0.00</td>
+                    <td><button onclick="addRow()">+</button></td>
+                </tr>
             </tbody>
         </table>
-        <div class="result" id="finalScore">التقييم النهائي: 0.00/5</div>
-        <div class="result" id="appraisal">زيادة سنوية مقترحة: -</div>
+        <div class="result-container">
+            <div class="result" id="finalScore">التقييم النهائي: 0.00/5</div>
+            <div class="result" id="appraisal">زيادة سنوية مقترحة: -</div>
+        </div>
         <button onclick="sendEmail()">Send to Email</button>
     </div>
-
-    <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
-
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-    <script type="text/javascript">
-       (function(){
-          emailjs.init("Vj6-K8TptzERk4c8B");  // Replace with your actual EmailJS public key
-       })();
-    </script>
-<script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     
-    // Initialize EmailJS with your User ID
-(function() {
-    emailjs.init("Vj6-K8TptzERk4c8B"); // Replace with your EmailJS User ID
-})();
+    <script>
+        emailjs.init("Vj6-K8TptzERk4c8B"); // Replace "your_user_id" with your actual EmailJS User ID
+    </script>
+    
+    <script>
+        function addRow() {
+            const table = document.getElementById("kpiTable");
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td><input type="text" class="aspect"></td>
+                <td><input type="number" class="weight" min="1" max="100" value="10"></td>
+                <td>
+                    <select class="rating" onchange="calculateScore()">
+                        <option value="1">⭐</option>
+                        <option value="2">⭐⭐</option>
+                        <option value="3" selected>⭐⭐⭐</option>
+                        <option value="4">⭐⭐⭐⭐</option>
+                        <option value="5">⭐⭐⭐⭐⭐</option>
+                    </select>
+                </td>
+                <td class="score">0.00</td>
+                <td><button onclick="this.parentElement.parentElement.remove(); calculateScore();">-</button></td>
+            `;
+            table.appendChild(row);
+        }
+        function calculateScore() {
+            let totalScore = 0;
+            let totalWeight = 0;
+            document.querySelectorAll("#kpiTable tr").forEach(row => {
+                const weight = parseInt(row.querySelector(".weight").value) || 0;
+                const rating = parseInt(row.querySelector(".rating").value) || 0;
+                const weightedScore = (rating * weight) / 100;
+                row.querySelector(".score").innerText = weightedScore.toFixed(2);
+                totalScore += weightedScore;
+                totalWeight += weight;
+            });
+            document.getElementById("finalScore").innerText = `التقييم النهائي: ${totalScore.toFixed(2)}/5`;
+            let appraisal = "لا توجد زيادة أو يحتاج لتحسين الأداء";
+            if (totalScore >= 4.5) appraisal = "زيادة 12-15%";
+            else if (totalScore >= 4.0) appraisal = "زيادة 8-10%";
+            else if (totalScore >= 3.5) appraisal = "زيادة 5-7%";
+            else if (totalScore >= 3.0) appraisal = "زيادة 2-4%";
+            document.getElementById("appraisal").innerText = `زيادة سنوية مقترحة: ${appraisal}`;
+        }
 
-// Function to calculate the score
-function calculateScore() {
-    let totalScore = 0;
-    let totalWeight = 0;
-    const criteria = [
-        { name: "جودة التصاميم والإبداع", weight: 25 },
-        { name: "الالتزام بالمواعيد", weight: 20 },
-        { name: "التفاعل مع الفريق والتجاوب مع التعديلات", weight: 15 },
-        { name: "عدد المشاريع المنجزة", weight: 15 },
-        { name: "استخدام الأدوات والتطوير الشخصي", weight: 10 },
-        { name: "تحقيق الأهداف التسويقية", weight: 15 }
-    ];
-
-    criteria.forEach((c, index) => {
-        const rating = parseInt(document.getElementById(`rating${index}`).value);
-        const weightedScore = (rating * c.weight) / 100;
-        totalScore += weightedScore;
-        totalWeight += c.weight;
-        document.getElementById(`score${index}`).innerText = weightedScore.toFixed(2);
-    });
-
-    document.getElementById("finalScore").innerText = `التقييم النهائي: ${totalScore.toFixed(2)}/5`;
-    let appraisal = "لا توجد زيادة أو يحتاج لتحسين الأداء";
-    if (totalScore >= 4.5) appraisal = "زيادة 12-15%";
-    else if (totalScore >= 4.0) appraisal = "زيادة 8-10%";
-    else if (totalScore >= 3.5) appraisal = "زيادة 5-7%";
-    else if (totalScore >= 3.0) appraisal = "زيادة 2-4%";
-    document.getElementById("appraisal").innerText = `زيادة سنوية مقترحة: ${appraisal}`;
-}
-
-// Function to send the email
-function sendEmail() {
+        async function sendEmail() {
     const employeeName = document.getElementById("employeeName").value;
     if (!employeeName) {
         alert("من فضلك أدخل اسم الموظف");
@@ -173,56 +182,118 @@ function sendEmail() {
     const finalScore = document.getElementById("finalScore").innerText;
     const appraisal = document.getElementById("appraisal").innerText;
 
-    let emailParams = {
-        to_email: "abdelrahman.codingprojects@gmail.com", // Replace with recipient(s)
-        subject: `${employeeName} Appraisal`,
-        body: `
-            Hello,
-
-            The appraisal for employee ${employeeName} is as follows:
-
-            Form Details:
-        `
+    const emailParams = {
+        to_email: "abdelrahman.codingprojects@gmail.com", // ***REPLACE with actual recipient email***
+        subject: `Appraisal Report for ${employeeName}`,
+        employeeName: employeeName,
+        finalScore: finalScore,
+        appraisal: appraisal,
+        tableImage: null // Initialize to null
     };
 
-    const criteria = [
-        { name: "جودة التصاميم والإبداع", weight: 25 },
-        { name: "الالتزام بالمواعيد", weight: 20 },
-        { name: "التفاعل مع الفريق والتجاوب مع التعديلات", weight: 15 },
-        { name: "عدد المشاريع المنجزة", weight: 15 },
-        { name: "استخدام الأدوات والتطوير الشخصي", weight: 10 },
-        { name: "تحقيق الأهداف التسويقية", weight: 15 }
-    ];
+    try {
+        const tableElement = document.getElementById("evaluationTable");
+        if (!tableElement) {
+            throw new Error("Table element not found.");
+        }
 
-    // Add employee name, final score, and appraisal
-    emailParams.employeeName = employeeName;
-    emailParams.finalScore = finalScore;
-    emailParams.appraisal = appraisal;
+        console.log("Before expansion:", tableElement.offsetWidth, tableElement.offsetHeight);
+        console.log("Parent before expansion:", tableElement.parentElement.offsetWidth, tableElement.parentElement.offsetHeight);
 
-    // Add the 6 aspects as separate variables
-    criteria.forEach((c, index) => {
-        const rating = document.getElementById(`rating${index}`).value;
-        const weightedScore = (parseInt(rating) * c.weight) / 100;
-        
-        emailParams[`name${index}`] = c.name;
-        emailParams[`weight${index}`] = c.weight;
-        emailParams[`rating${index}`] = rating;
-        emailParams[`weightedScore${index}`] = weightedScore.toFixed(2);
-    });
+        const originalWidth = tableElement.style.width;
+        const originalHeight = tableElement.style.height;
+        const originalOverflow = tableElement.style.overflow;
+        const originalParentOverflow = tableElement.parentElement.style.overflow;
 
-    // Send email using EmailJS
-    emailjs.send("service_bj3af96", "template_q990eif", emailParams)
-        .then(function(response) {
-            alert("تم إرسال التقييم إلى البريد الإلكتروني بنجاح");
-        }, function(error) {
-            alert("فشل في إرسال البريد الإلكتروني. حاول مرة أخرى.");
+        tableElement.style.width = "auto";
+        tableElement.style.height = "auto";
+        tableElement.style.overflow = "visible";
+        tableElement.parentElement.style.overflow = "visible";
+
+        console.log("After expansion:", tableElement.offsetWidth, tableElement.offsetHeight);
+        console.log("Parent after expansion:", tableElement.parentElement.offsetWidth, tableElement.parentElement.offsetHeight);
+
+        alert("جاري إنشاء صورة التقرير...");
+
+        const canvas = await html2canvas(tableElement, {
+            scale: 1,
+            backgroundColor: '#ffffff',
+            width: tableElement.offsetWidth,
+            height: tableElement.offsetHeight
         });
+        const dataURL = canvas.toDataURL('image/jpeg', 0.9);
+
+        const blob = dataURLtoBlob(dataURL);
+
+        const options = {
+            maxSizeMB: 0.5, // Adjust as needed
+            maxWidthOrHeight: 1920,
+            useWebWorker: true
+        };
+
+        try {
+            const compressedBlob = await window.imageCompression(blob, options);
+            const compressedDataURL = await blobToDataURL(compressedBlob);
+            emailParams.tableImage = compressedDataURL;
+            console.log("Image compressed.");
+        } catch (compressionError) {
+            console.error("Image compression error:", compressionError);
+            emailParams.tableImage = dataURL; // Fallback
+            console.warn("Using original (larger) image due to compression error.");
+        }
+
+        tableElement.style.width = originalWidth;
+        tableElement.style.height = originalHeight;
+        tableElement.style.overflow = originalOverflow;
+        tableElement.parentElement.style.overflow = originalParentOverflow;
+
+        alert("جاري إرسال البريد الإلكتروني...");
+        await sendEmailJS(emailParams);
+        alert("تم إرسال التقييم إلى البريد الإلكتروني بنجاح");
+
+    } catch (error) {
+        console.error("Overall Error:", error);
+        alert("فشل في إرسال التقييم. " + error.message);
+    }
 }
 
+function dataURLtoBlob(dataURL) {
+    const parts = dataURL.split(';base64,');
+    const contentType = parts[0].split(':')[1];
+    const raw = window.atob(parts[1]);
+    const rawLength = raw.length;
+    const uInt8Array = new Uint8Array(rawLength);
 
-</script>
+    for (let i = 0; i < rawLength; ++i) {
+        uInt8Array[i] = raw.charCodeAt(i);
+    }
 
+    return new Blob([uInt8Array], { type: contentType });
+}
 
+function blobToDataURL(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = e => resolve(e.srcElement.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
 
+async function sendEmailJS(emailParams) {
+    try {
+        const response = await emailjs.send("service_bj3af96", "template_q990eif", emailParams); // ***REPLACE with your service and template IDs***
+        console.log("EmailJS Success:", response);
+    } catch (error) {
+        console.error("EmailJS Error:", error);
+        if (error.message) {
+            alert("فشل في إرسال البريد الإلكتروني: " + error.message);
+        } else {
+            alert("فشل في إرسال البريد الإلكتروني. حاول مرة أخرى.");
+        }
+        throw error;
+    }
+}
+    </script>
 </body>
 </html>
