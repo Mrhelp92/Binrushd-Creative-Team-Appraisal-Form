@@ -3,11 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تقرير تقييم موظف</title>
-    <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.0/dist/browser-image-compression.js"></script>
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.0/dist/browser-image-compression.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <title>تقييم موظف</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -61,6 +58,7 @@
             border-radius: 5px;
             cursor: pointer;
             margin-top: 10px;
+            width: 100%;
         }
         button:hover {
             background-color: #45a049;
@@ -82,6 +80,35 @@
             background-color: #f2f2f2; /* Light gray background for headers */
             font-weight: bold;
         }
+
+        #submissionList {
+            margin-top: 10px;
+            width: 100%;
+            max-width: 300px;
+            padding: 10px;
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            font-size: 16px;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        #submissionList:hover {
+            border-color: #0056b3;
+            background-color: #e9ecef;
+        }
+
+        #submissionList:focus {
+            outline: none;
+            border-color: #0056b3;
+            box-shadow: 0 0 5px rgba(0, 91, 187, 0.5);
+        }
+      
+  
+
 
     </style>
 </head>
@@ -123,13 +150,18 @@
             <div class="result" id="finalScore">التقييم النهائي: 0.00/5</div>
             <div class="result" id="appraisal">زيادة سنوية مقترحة: -</div>
         </div>
-        <button onclick="sendEmail()">Send to Email</button>
+        <button onclick="sendEmail()">ارسل إلى الايميل</button>
+        <div>
+            <select id="submissionList" onchange="loadForm(this.value)">
+                <option value="">فتح تقييم سابق</option>
+            </select>
+        </div>
+        
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
+
+
     
-    <script>
-        emailjs.init("Vj6-K8TptzERk4c8B"); // Replace "your_user_id" with your actual EmailJS User ID
-    </script>
     
     <script>
         function addRow() {
@@ -172,128 +204,206 @@
             document.getElementById("appraisal").innerText = `زيادة سنوية مقترحة: ${appraisal}`;
         }
 
-        async function sendEmail() {
+        function getTableHTML() {
+    const table = document.getElementById("evaluationTable");
+    if (!table) return ""; // Ensure the table exists before proceeding
+
+    let tableHTML = `<table border='1' cellspacing='0' cellpadding='5' style='border-collapse: collapse; width: 100%; text-align: center; direction: rtl;'>`;
+
+    // Extract headers (excluding last column "+")
+    tableHTML += "<tr>";
+    const headers = table.querySelectorAll("thead th");
+    headers.forEach((th, index) => {
+        if (index < headers.length - 1) {
+            tableHTML += `<th style="background: #f2f2f2; padding: 8px;">${th.innerText.trim()}</th>`;
+        }
+    });
+    tableHTML += "</tr>";
+
+    // Extract table rows
+    const rows = table.querySelectorAll("tbody tr");
+    rows.forEach(row => {
+        tableHTML += "<tr>";
+        const cells = row.querySelectorAll("td");
+        cells.forEach((cell, index) => {
+            if (index < cells.length - 1) { // Skip last column
+                let cellData = "";
+                const input = cell.querySelector("input, select");
+                if (input) {
+                    cellData = input.value || (input.selectedIndex !== undefined ? input.options[input.selectedIndex].text : "");
+                } else {
+                    cellData = cell.innerText.trim();
+                }
+                tableHTML += `<td style="padding: 8px;">${cellData}</td>`;
+            }
+        });
+        tableHTML += "</tr>";
+    });
+
+    tableHTML += "</table>";
+    return tableHTML;
+}
+
+// Initialize Supabase client outside the function so it's available globally
+const { createClient } = supabase;
+const supabaseClient = createClient(
+    'https://jkhnugjsmnfarqveotdf.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpraG51Z2pzbW5mYXJxdmVvdGRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzkxNTgwMjUsImV4cCI6MjA1NDczNDAyNX0.DEjCTJMbdrSa6anjSCuzg3w01h0bgrb4Op8Vt9Pukx8'
+);
+
+async function saveForm() {
     const employeeName = document.getElementById("employeeName").value;
-    if (!employeeName) {
-        alert("من فضلك أدخل اسم الموظف");
+    const submissionName = prompt("Enter a name for this submission:");
+
+    if (!submissionName) {
+        alert("Submission name is required!");
         return;
     }
 
-    const finalScore = document.getElementById("finalScore").innerText;
-    const appraisal = document.getElementById("appraisal").innerText;
+    let formData = [];
+    document.querySelectorAll("#kpiTable tr").forEach(row => {
+        let aspect = row.querySelector(".aspect")?.value || "";
+        let weight = row.querySelector(".weight")?.value || "";
+        let rating = row.querySelector(".rating")?.value || "";
+        formData.push({ aspect, weight, rating });
+    });
 
-    const emailParams = {
-        to_email: "abdelrahman.codingprojects@gmail.com", // ***REPLACE with actual recipient email***
-        subject: `Appraisal Report for ${employeeName}`,
+    // Use `supabaseClient` instead of `supabase`
+    const { data, error } = await supabaseClient
+        .from("evaluations")
+        .insert([{ submission_name: submissionName, employee_name: employeeName, form_data: formData }]);
+
+    if (error) {
+        console.error("Error saving form:", error);
+        alert("Failed to save form!");
+    } else {
+        alert("Form saved successfully!");
+        loadSubmissions(); // Refresh dropdown list
+    }
+}
+
+
+async function sendEmail() {
+    await saveForm(); // Save form data before sending the email
+    var recipientEmail = "a.naser.cse@gmail.com"; // Replace with dynamic input if needed
+    var employeeName = document.getElementById("employeeName")?.value.trim() || "Unknown Employee";
+    var finalScoreText = document.getElementById("finalScore")?.innerText || "0";
+    var finalScore = parseFloat(finalScoreText.match(/[\d.]+/)[0]) || 0; // Extract only the number
+    var appraisal = document.getElementById("appraisal")?.innerText.trim() || "0%";
+
+    let criteria = [];
+    document.querySelectorAll("#kpiTable tr").forEach((row, index) => {
+        let name = row.querySelector(".aspect")?.value.trim() || "";
+        let weight = parseFloat(row.querySelector(".weight")?.value) || 0;
+        let rating = parseFloat(row.querySelector(".rating")?.value) || 0;
+        let weightedScore = parseFloat(row.querySelector(".score")?.innerText.trim()) || 0;
+
+        if (name) { // Only add valid rows
+            criteria.push({
+                index: index + 1,
+                name: name,
+                weight: weight,
+                rating: rating,
+                weightedScore: weightedScore
+            });
+        }
+    });
+
+    let data = {
+        recipient: recipientEmail,
         employeeName: employeeName,
         finalScore: finalScore,
-        appraisal: appraisal,
-        tableImage: null // Initialize to null
+        appraisal: appraisal.replace("زيادة سنوية مقترحة: ", ""),
+        criteria: criteria
     };
 
-    try {
-        const tableElement = document.getElementById("evaluationTable");
-        if (!tableElement) {
-            throw new Error("Table element not found.");
-        }
+    console.log("Sending Data:", data); // Debugging log
 
-        console.log("Before expansion:", tableElement.offsetWidth, tableElement.offsetHeight);
-        console.log("Parent before expansion:", tableElement.parentElement.offsetWidth, tableElement.parentElement.offsetHeight);
-
-        const originalWidth = tableElement.style.width;
-        const originalHeight = tableElement.style.height;
-        const originalOverflow = tableElement.style.overflow;
-        const originalParentOverflow = tableElement.parentElement.style.overflow;
-
-        tableElement.style.width = "auto";
-        tableElement.style.height = "auto";
-        tableElement.style.overflow = "visible";
-        tableElement.parentElement.style.overflow = "visible";
-
-        console.log("After expansion:", tableElement.offsetWidth, tableElement.offsetHeight);
-        console.log("Parent after expansion:", tableElement.parentElement.offsetWidth, tableElement.parentElement.offsetHeight);
-
-        alert("جاري إنشاء صورة التقرير...");
-
-        const canvas = await html2canvas(tableElement, {
-            scale: 1,
-            backgroundColor: '#ffffff',
-            width: tableElement.offsetWidth,
-            height: tableElement.offsetHeight
-        });
-        const dataURL = canvas.toDataURL('image/jpeg', 0.9);
-
-        const blob = dataURLtoBlob(dataURL);
-
-        const options = {
-            maxSizeMB: 0.5, // Adjust as needed
-            maxWidthOrHeight: 1920,
-            useWebWorker: true
-        };
-
-        try {
-            const compressedBlob = await window.imageCompression(blob, options);
-            const compressedDataURL = await blobToDataURL(compressedBlob);
-            emailParams.tableImage = compressedDataURL;
-            console.log("Image compressed.");
-        } catch (compressionError) {
-            console.error("Image compression error:", compressionError);
-            emailParams.tableImage = dataURL; // Fallback
-            console.warn("Using original (larger) image due to compression error.");
-        }
-
-        tableElement.style.width = originalWidth;
-        tableElement.style.height = originalHeight;
-        tableElement.style.overflow = originalOverflow;
-        tableElement.parentElement.style.overflow = originalParentOverflow;
-
-        alert("جاري إرسال البريد الإلكتروني...");
-        await sendEmailJS(emailParams);
-        alert("تم إرسال التقييم إلى البريد الإلكتروني بنجاح");
-
-    } catch (error) {
-        console.error("Overall Error:", error);
-        alert("فشل في إرسال التقييم. " + error.message);
-    }
+    fetch("https://mr-help-binrushd-email-sender.hf.space", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        return response.json();
+    })
+    .then(responseData => {
+        console.log("Server Response:", responseData);
+        alert(responseData.message);
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        alert("Failed to send email. Please try again.");
+    });
 }
+async function loadSubmissions() {
+    const { data, error } = await supabaseClient
+        .from("evaluations")
+        .select("id, submission_name");
 
-function dataURLtoBlob(dataURL) {
-    const parts = dataURL.split(';base64,');
-    const contentType = parts[0].split(':')[1];
-    const raw = window.atob(parts[1]);
-    const rawLength = raw.length;
-    const uInt8Array = new Uint8Array(rawLength);
-
-    for (let i = 0; i < rawLength; ++i) {
-        uInt8Array[i] = raw.charCodeAt(i);
+    if (error) {
+        console.error("Error loading submissions:", error);
+        return;
     }
 
-    return new Blob([uInt8Array], { type: contentType });
-}
-
-function blobToDataURL(blob) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = e => resolve(e.srcElement.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
+    const dropdown = document.getElementById("submissionList");
+    dropdown.innerHTML = `<option value="">فتح تقييم سابق</option>`;
+    
+    data.forEach(submission => {
+        let option = document.createElement("option");
+        option.value = submission.id;
+        option.textContent = submission.submission_name;
+        dropdown.appendChild(option);
     });
 }
 
-async function sendEmailJS(emailParams) {
-    try {
-        const response = await emailjs.send("service_bj3af96", "template_q990eif", emailParams); // ***REPLACE with your service and template IDs***
-        console.log("EmailJS Success:", response);
-    } catch (error) {
-        console.error("EmailJS Error:", error);
-        if (error.message) {
-            alert("فشل في إرسال البريد الإلكتروني: " + error.message);
-        } else {
-            alert("فشل في إرسال البريد الإلكتروني. حاول مرة أخرى.");
-        }
-        throw error;
+// Load submissions on page load
+document.addEventListener("DOMContentLoaded", loadSubmissions);
+
+async function loadForm(submissionId) {
+    if (!submissionId) return;
+
+    const { data, error } = await supabaseClient
+        .from("evaluations")
+        .select("employee_name, form_data")
+        .eq("id", submissionId)
+        .single();
+
+    if (error) {
+        console.error("Error loading form:", error);
+        alert("Failed to load form!");
+        return;
     }
+
+    document.getElementById("employeeName").value = data.employee_name;
+
+    const tableBody = document.getElementById("kpiTable");
+    tableBody.innerHTML = ""; // Clear existing rows
+
+    data.form_data.forEach(entry => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td><input type="text" class="aspect" value="${entry.aspect}"></td>
+            <td><input type="number" class="weight" min="1" max="100" value="${entry.weight}"></td>
+            <td>
+                <select class="rating">
+                    <option value="1" ${entry.rating == 1 ? "selected" : ""}>⭐</option>
+                    <option value="2" ${entry.rating == 2 ? "selected" : ""}>⭐⭐</option>
+                    <option value="3" ${entry.rating == 3 ? "selected" : ""}>⭐⭐⭐</option>
+                    <option value="4" ${entry.rating == 4 ? "selected" : ""}>⭐⭐⭐⭐</option>
+                    <option value="5" ${entry.rating == 5 ? "selected" : ""}>⭐⭐⭐⭐⭐</option>
+                </select>
+            </td>
+            <td class="score">0.00</td>
+            <td><button onclick="this.parentElement.parentElement.remove(); calculateScore();">-</button></td>
+        `;
+        tableBody.appendChild(row);
+    });
+
+    calculateScore();
 }
+
     </script>
 </body>
 </html>
