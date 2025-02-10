@@ -381,7 +381,7 @@ async function loadForm(submissionId) {
     const tableBody = document.getElementById("kpiTable");
     tableBody.innerHTML = ""; // Clear existing rows
 
-    data.form_data.forEach(entry => {
+    data.form_data.forEach((entry, index) => {
         const row = document.createElement("tr");
         row.innerHTML = `
             <td><input type="text" class="aspect" value="${entry.aspect}"></td>
@@ -396,13 +396,18 @@ async function loadForm(submissionId) {
                 </select>
             </td>
             <td class="score">0.00</td>
-            <td><button onclick="this.parentElement.parentElement.remove(); calculateScore();">-</button></td>
+            <td>
+                <button onclick="${index === 0 ? 'addRow()' : 'this.parentElement.parentElement.remove(); calculateScore();'}">
+                    ${index === 0 ? '+' : '-'}
+                </button>
+            </td>
         `;
         tableBody.appendChild(row);
     });
 
     calculateScore();
 }
+
 
     </script>
 </body>
