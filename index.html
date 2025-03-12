@@ -285,7 +285,7 @@ async function saveForm() {
 
 async function sendEmail() {
     await saveForm(); // Save form data before sending the email
-    var recipientEmail = "alsalman.jumana@gmail.com"; // Replace with dynamic input if needed
+    var recipientEmail = "J.ziyad@binrushd.net"; // Replace with dynamic input if needed
     var employeeName = document.getElementById("employeeName")?.value.trim() || "Unknown Employee";
     var finalScoreText = document.getElementById("finalScore")?.innerText || "0";
     var finalScore = parseFloat(finalScoreText.match(/[\d.]+/)[0]) || 0; // Extract only the number
